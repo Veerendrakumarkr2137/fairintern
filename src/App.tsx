@@ -11,6 +11,7 @@ import { InternshipDetail } from './pages/InternshipDetail';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { RecruiterDashboard } from './pages/RecruiterDashboard';
 import { Auth } from './pages/Auth';
+import { AuthCallback } from './pages/AuthCallback';
 import { Profile } from './pages/Profile';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/recruiter" element={<RecruiterDashboard />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </main>
         <Footer />

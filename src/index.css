@@ -39,3 +39,21 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
 }
+
+@keyframes scan {
+  from { top: 0%; }
+  to { top: 100%; }
+}
+
+.animate-scan {
+  animation: scan 3s linear infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(0.99); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}

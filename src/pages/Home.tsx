@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { MOCK_INTERNSHIPS } from '@/src/mockData';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Search, Zap, CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { Shield, Search, Zap, CheckCircle2, AlertTriangle, AlertOctagon, Calendar } from 'lucide-react';
 import { Modal } from '@/src/components/ui/Modal';
+import { InternshipBot } from '@/src/components/ui/InternshipBot';
 
 export function Home() {
   const navigate = useNavigate();
   const isAuthenticated = !!localStorage.getItem('token');
-  const [internships, setInternships] = useState(MOCK_INTERNSHIPS);
+  const [internships, setInternships] = useState<any[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   const [fairOnly, setFairOnly] = useState(false);
   const [paidOnly, setPaidOnly] = useState(false);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('all_internships');
+    if (saved) {
+      setInternships(JSON.parse(saved));
+    } else {
+      setInternships(MOCK_INTERNSHIPS);
+      localStorage.setItem('all_internships', JSON.stringify(MOCK_INTERNSHIPS));
+    }
+  }, []);
   
   const handleActionClick = () => {
     if (!isAuthenticated) {
@@ -19,11 +30,7 @@ export function Home() {
     }
   };
 
-  const simulateAIFetch = () => {
-    // Just a fun mock shuffle or add
-    setInternships([...internships].reverse());
-    alert("Simulated fetching real-time listings using AI!");
-  };
+
 
   if (!isAuthenticated) {
     return (
@@ -108,12 +115,7 @@ export function Home() {
             >
               Paid Only
             </button>
-            <button 
-              onClick={simulateAIFetch}
-              className="px-5 py-2.5 bg-slate-900 text-white border border-slate-900 rounded-xl text-sm font-semibold hover:bg-slate-800 whitespace-nowrap flex items-center gap-2"
-            >
-               <Zap className="w-4 h-4 fill-white" /> Fetch Web Internships (AI)
-            </button>
+
           </div>
         </div>
 
@@ -133,12 +135,13 @@ export function Home() {
           ))}
         </div>
       </div>
+      <InternshipBot />
     </div>
   );
 }
 
 function InternshipCard(props: any) {
-  const { role, company, stipend, fairnessScore, fairnessLabel, flags, source, onClick } = props;
+  const { role, company, stipend, fairnessScore, fairnessLabel, flags, source, startDate, endDate, onClick } = props;
 
   const getFairnessColor = () => {
     if (fairnessLabel.toLowerCase() === 'fair') return 'bg-green-100 text-green-800 border-green-200';
@@ -175,6 +178,11 @@ function InternshipCard(props: any) {
             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
             <span className="text-slate-700 font-semibold">{stipend}</span>
           </div>
+          {startDate && (
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-2 bg-indigo-50 px-2 py-0.5 rounded-md inline-block w-fit">
+              <Calendar className="w-3 h-3" /> {startDate} to {endDate}
+            </div>
+          )}
         </div>
         <div className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border ${getFairnessColor()} shrink-0`}>
           {getIcon()}

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -244,6 +245,96 @@ app.post('/api/analyze', async (req, res) => {
   }
 });
 
+// --- AI Internship Discovery Agent (New) ---
+app.post('/api/ai/chat', async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message is required' });
+
+  // Guardrail check: Is this related to internships or careers?
+  const keywords = ['intern', 'job', 'career', 'hiring', 'opportunity', 'role', 'company', 'interview', 'resume', 'skill'];
+  const isRelated = keywords.some(k => message.toLowerCase().includes(k));
+
+  if (!isRelated) {
+    return res.json({ 
+      error: "I am specialized only in internship discovery. Please ask a question related to AI internships or career opportunities." 
+    });
+  }
+
+  try {
+    // 1. Get real-time data from Tavily
+    const tavilyRes = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: process.env.TAVILY_API_KEY,
+        query: `Current internships: ${message}`,
+        search_depth: "advanced",
+        max_results: 5
+      })
+    });
+    
+    if (!tavilyRes.ok) {
+      throw new Error(`Tavily API failed with status ${tavilyRes.status}`);
+    }
+
+    const searchData: any = await tavilyRes.json();
+    const searchResults = searchData.results?.map((r: any) => `${r.title}: ${r.content}`).join('\n') || "No results found.";
+
+    // 2. Use Gemini to structure the real-time data
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-pro-preview",
+      contents: `You are a specialized Internship Discovery Agent. 
+      The user is asking: "${message}"
+      
+      I have found the following real-time data from the web:
+      ${searchResults}
+      
+      Your task:
+      1. Extract the most relevant AI internships from this search data.
+      2. Strictly return them as a JSON array of objects.
+      3. Each object MUST have: company, role, description, location.
+      4. If the search results are poor, use your internal knowledge to supplement with legitimate opportunities.
+      
+      Return ONLY the JSON. No other text.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            internships: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  company: { type: Type.STRING },
+                  role: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  location: { type: Type.STRING }
+                },
+                required: ["company", "role", "description", "location"]
+              }
+            }
+          },
+          required: ["internships"]
+        }
+      }
+    });
+
+    const result = JSON.parse(response.text || '{}');
+    console.log("Structured Internships:", result);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Chat AI error details:', {
+      message: error.message,
+      stack: error.stack,
+      tavilyKeyProvided: !!process.env.TAVILY_API_KEY,
+      geminiKeyProvided: !!process.env.GEMINI_API_KEY
+    });
+    res.status(500).json({ error: 'Failed to discover internships: ' + (error.message || 'Unknown error') });
+  }
+});
+
 // --- Auth Routes (Mock) ---
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
@@ -273,28 +364,7 @@ app.post('/api/auth/register', (req, res) => {
   res.json({ token, user: { email, role } });
 });
 
-app.get('/api/auth/google/url', (req, res) => {
-  // Mock Google OAuth URL
-  res.json({ url: `${process.env.APP_URL || 'http://localhost:3000'}/auth/callback?code=mock-google-code` });
-});
 
-app.get('/auth/callback', (req, res) => {
-  res.send(`
-    <html>
-      <body>
-        <script>
-          if (window.opener) {
-            window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', token: 'mock-google-token' }, '*');
-            window.close();
-          } else {
-            window.location.href = '/';
-          }
-        </script>
-        <p>Authentication successful. This window should close automatically.</p>
-      </body>
-    </html>
-  `);
-});
 
 
 async function startServer() {

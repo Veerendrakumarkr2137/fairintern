@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FormInput } from '@/src/components/ui/FormInput';
 import { GoogleAuthButton } from '@/src/components/ui/GoogleAuthButton';
+import { createClient } from '@/src/utils/supabase/client';
 import { Shield, Sparkles, User, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
@@ -107,15 +108,21 @@ export function Auth() {
 
   const handleGoogleAuth = async () => {
     try {
-      const res = await fetch('/api/auth/google/url');
-      const { url } = await res.json();
-      const authWindow = window.open(url, 'oauth_popup', 'width=600,height=700');
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?role=${authMode}`,
+          queryParams: {
+            prompt: 'select_account' // This forces it to ask for the email/account
+          }
+        }
+      });
       
-      if (!authWindow) {
-        alert('Please allow popups to connect with Google.');
-      }
-    } catch (e) {
+      if (error) throw error;
+    } catch (e: any) {
       console.error(e);
+      alert(e.message || 'Google Auth failed');
     }
   };
 
@@ -123,13 +130,14 @@ export function Auth() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
         localStorage.setItem('token', event.data.token);
-        localStorage.setItem('user', JSON.stringify({ email: 'google@user.com', role: 'student' }));
-        navigate('/');
+        const userRole = authMode === 'recruiter' ? 'recruiter' : 'student';
+        localStorage.setItem('user', JSON.stringify({ email: 'google@user.com', role: userRole }));
+        navigate(userRole === 'recruiter' ? '/recruiter' : '/');
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [navigate]);
+  }, [navigate, authMode]);
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] flex items-center py-12 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
