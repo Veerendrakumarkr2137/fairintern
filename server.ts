@@ -13,18 +13,29 @@ app.use(express.json());
 const mockInternships = [
   {
     id: "int-001",
-    role: "Frontend Intern",
-    company: "SparkLabs",
-    stipend: "₹8,000/month",
-    description: "Build UI components for an internal dashboard. Expected 20 hrs/week.",
+    role: "Frontend Engineer Intern (LinkedIn)",
+    company: "Google via LinkedIn",
+    stipend: "₹45,000/month",
+    description: "Join the Google Search frontend team. Work on React components with a dedicated mentor.",
     work_type: "learning",
-    tasks: [
-      { id: "t1", title: "Create a simple React component", type: "link" }
-    ],
-    posted_at: "2026-03-20",
-    fairnessScore: 8,
+    tasks: [{ id: "t1", title: "Build a responsive search bar component", type: "link" }],
+    posted_at: new Date().toISOString().split('T')[0],
+    fairnessScore: 10,
     fairnessLabel: "Fair",
-    flags: ["Clear stipend", "Reasonable hours", "Learning focused"]
+    flags: ["Excellent stipend", "Premium learning", "Clear mentorship"]
+  },
+  {
+    id: "int-001b",
+    role: "Backend Node.js Intern",
+    company: "Zomato via Naukri",
+    stipend: "₹30,000/month",
+    description: "Work with our delivery scheduling team. Strong programming skills required. Fast-paced environment.",
+    work_type: "learning",
+    tasks: [{ id: "t1", title: "Implement a rate-limiter in Express", type: "link" }],
+    posted_at: new Date().toISOString().split('T')[0],
+    fairnessScore: 9,
+    fairnessLabel: "Fair",
+    flags: ["Good stipend", "Skill-building tasks"]
   },
   {
     id: "int-002",
@@ -243,6 +254,16 @@ app.post('/api/auth/login', (req, res) => {
     res.json({ token, user: { email, role: email.includes('recruiter') ? 'recruiter' : 'student' } });
   } else {
     res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.post('/api/auth/recruiter-login', (req, res) => {
+  const { name, company, phone } = req.body;
+  if (name && company && phone) {
+    const token = jwt.sign({ userId: 'rec-1', name, company, role: 'recruiter' }, JWT_SECRET);
+    res.json({ token, user: { name, company, phone, role: 'recruiter' } });
+  } else {
+    res.status(400).json({ error: 'Missing parameters' });
   }
 });
 

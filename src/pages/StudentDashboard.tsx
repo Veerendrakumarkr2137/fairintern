@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 export function StudentDashboard() {
   // Mock data for student submissions
@@ -9,37 +10,52 @@ export function StudentDashboard() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Student Dashboard</h1>
-        <p className="text-slate-500 mt-2">Track your applications and task scores.</p>
-      </div>
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1 w-full">
+      {/* Background glowing effects to match Home and Auth */}
+      <div className="absolute top-20 left-10 w-[400px] h-[400px] bg-primary-600/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-20 right-10 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <h2 className="text-lg font-semibold text-slate-900">Your Applications</h2>
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-10 relative z-10"
+      >
+        <h1 className="text-4xl font-extrabold text-white tracking-tight">Student Dashboard</h1>
+        <p className="text-slate-400 mt-2 text-lg">Track your active applications and progress.</p>
+      </motion.div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-xl overflow-hidden relative z-10"
+      >
+        <div className="px-6 py-5 border-b border-white/10 bg-white/5">
+          <h2 className="text-xl font-bold text-white">Your Applications</h2>
         </div>
-        <div className="divide-y divide-slate-200">
+        <div className="divide-y divide-white/5">
           {submissions.map(sub => (
-            <div key={sub.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div key={sub.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/5 transition-colors">
               <div>
-                <h3 className="text-lg font-medium text-slate-900">{sub.role}</h3>
-                <p className="text-sm text-slate-500">{sub.company} • Applied on {sub.date}</p>
+                <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary-300 transition-colors">{sub.role}</h3>
+                <p className="text-sm text-slate-400 font-medium">
+                  {sub.company} <span className="mx-2">•</span> Applied on {sub.date}
+                </p>
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-8">
                 <div className="text-right">
-                  <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Status</p>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    sub.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
-                    sub.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-slate-100 text-slate-800'
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-bold mb-2">Status</p>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
+                    sub.status === 'reviewed' ? 'bg-primary-500/20 text-primary-300 border border-primary-500/30' :
+                    sub.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
+                    'bg-white/10 text-slate-300 border border-white/20'
                   }`}>
-                    {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+                    {sub.status}
                   </span>
                 </div>
                 <div className="text-right min-w-[80px]">
-                  <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Task Score</p>
-                  <span className="text-lg font-bold text-slate-900">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-bold mb-2">Task Score</p>
+                  <span className={`text-xl font-black ${sub.score !== null ? 'text-white' : 'text-slate-500'}`}>
                     {sub.score !== null ? `${sub.score}/10` : '-'}
                   </span>
                 </div>
@@ -47,7 +63,7 @@ export function StudentDashboard() {
             </div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
