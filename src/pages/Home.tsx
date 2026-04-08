@@ -3,7 +3,6 @@ import { MOCK_INTERNSHIPS } from '@/src/mockData';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Search, Zap, CheckCircle2, AlertTriangle, AlertOctagon, Calendar } from 'lucide-react';
 import { Modal } from '@/src/components/ui/Modal';
-import { InternshipBot } from '@/src/components/ui/InternshipBot';
 
 export function Home() {
   const navigate = useNavigate();
@@ -135,7 +134,6 @@ export function Home() {
           ))}
         </div>
       </div>
-      <InternshipBot />
     </div>
   );
 }

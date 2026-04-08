@@ -13,6 +13,8 @@ import { RecruiterDashboard } from './pages/RecruiterDashboard';
 import { Auth } from './pages/Auth';
 import { AuthCallback } from './pages/AuthCallback';
 import { Profile } from './pages/Profile';
+import { InternshipBot } from './components/ui/InternshipBot';
+
 
 export default function App() {
   return (
@@ -30,7 +32,9 @@ export default function App() {
           </Routes>
         </main>
         <Footer />
+        <InternshipBot />
       </div>
+
     </Router>
   );
 }
