@@ -16,7 +16,15 @@ export function InternshipBot() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!isOpen) setShowGreeting(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -60,20 +68,47 @@ export function InternshipBot() {
     <>
       {/* Floating Toggle Button */}
       {!isOpen && (
-        <motion.button
-          initial={{ scale: 0, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all z-[999] group overflow-hidden"
-        >
-          <motion.div 
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 4 }}
+        <div className="fixed bottom-6 right-6 z-[999] flex flex-col items-end gap-3">
+          <AnimatePresence>
+            {showGreeting && (
+              <motion.div
+                initial={{ opacity: 0, x: 20, scale: 0.8 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 20, scale: 0.8 }}
+                className="bg-white px-5 py-3 rounded-2xl shadow-xl border border-slate-100 text-sm font-bold text-slate-800 flex items-center gap-3 mb-2"
+              >
+                <div className="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <span>Need help finding AI internships?</span>
+                <button 
+                  onClick={() => setShowGreeting(false)}
+                  className="p-1 hover:bg-slate-100 rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          <motion.button
+            initial={{ scale: 0, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            onClick={() => {
+              setIsOpen(true);
+              setShowGreeting(false);
+            }}
+            className="w-16 h-16 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-800 transition-all group overflow-hidden"
           >
-            <Bot className="w-7 h-7" />
-          </motion.div>
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        </motion.button>
+            <motion.div 
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 4 }}
+            >
+              <Bot className="w-7 h-7" />
+            </motion.div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </motion.button>
+        </div>
       )}
 
       {/* Chat Window */}

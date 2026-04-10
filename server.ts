@@ -4,6 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import jwt from 'jsonwebtoken';
+import { supabase } from './utils/supabase/express';
 
 const app = express();
 const PORT = 3000;
@@ -129,51 +130,64 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/api/internships', (req, res) => {
+app.get('/api/internships', async (req, res) => {
   const limit = parseInt(req.query.limit as string) || 10;
-  res.json(mockInternships.slice(0, limit));
+  const { data, error } = await supabase
+    .from('internships')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
-app.get('/api/internships/:id', (req, res) => {
-  const internship = mockInternships.find(i => i.id === req.params.id);
-  if (internship) {
-    res.json(internship);
-  } else {
-    res.status(404).json({ error: 'Internship not found' });
-  }
+app.get('/api/internships/:id', async (req, res) => {
+  const { data, error } = await supabase
+    .from('internships')
+    .select('*')
+    .eq('id', req.params.id)
+    .single();
+
+  if (error) return res.status(404).json({ error: 'Internship not found' });
+  res.json(data);
 });
 
-app.get('/api/search', (req, res) => {
-  // Mock search returning curated India internships
+app.get('/api/search', async (req, res) => {
   const limit = parseInt(req.query.limit as string) || 5;
-  res.json(mockInternships.slice(0, limit));
+  const { data, error } = await supabase
+    .from('internships')
+    .select('*')
+    .limit(limit);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
-app.post('/api/internships', (req, res) => {
-  const newInternship = {
-    id: `int-00${mockInternships.length + 1}`,
-    ...req.body,
-    posted_at: new Date().toISOString().split('T')[0],
-    fairnessScore: 5, // Mock default
-    fairnessLabel: "Suspicious",
-    flags: ["Pending AI analysis"]
-  };
-  mockInternships.push(newInternship);
-  res.status(201).json(newInternship);
+app.post('/api/internships', async (req, res) => {
+  const { role, company, stipend, description, work_type, source, startDate, endDate } = req.body;
+  
+  const { data, error } = await supabase
+    .from('internships')
+    .insert([{
+      role, company, stipend, description, source,
+      start_date: startDate,
+      end_date: endDate,
+      fairness_score: 5,
+      fairness_label: "Suspicious",
+      flags: ["Pending AI analysis"]
+    }])
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
 });
 
-app.post('/api/applications/:internshipId', (req, res) => {
-  const newSubmission = {
-    id: `sub-00${mockSubmissions.length + 1}`,
-    internshipId: req.params.internshipId,
-    studentId: "stu-current", // Mock current user
-    status: "pending",
-    score: null,
-    feedback: null,
-    ...req.body
-  };
-  mockSubmissions.push(newSubmission);
-  res.status(201).json(newSubmission);
+app.post('/api/applications/:internshipId', async (req, res) => {
+  // In a real app, you would have a 'submissions' or 'applications' table.
+  // We'll just mock success for now as the schema didn't include it.
+  res.status(201).json({ status: 'Application submitted successfully', internshipId: req.params.internshipId });
 });
 
 // --- AI Analyzer Service ---
@@ -250,88 +264,48 @@ app.post('/api/ai/chat', async (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'Message is required' });
 
-  // Guardrail check: Is this related to internships or careers?
-  const keywords = ['intern', 'job', 'career', 'hiring', 'opportunity', 'role', 'company', 'interview', 'resume', 'skill'];
-  const isRelated = keywords.some(k => message.toLowerCase().includes(k));
-
-  if (!isRelated) {
-    return res.json({ 
-      error: "I am specialized only in internship discovery. Please ask a question related to AI internships or career opportunities." 
-    });
-  }
-
+  // Guardrail removed: The agent will now respond to any input from the user
   try {
-    // 1. Get real-time data from Tavily
-    const tavilyRes = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: process.env.TAVILY_API_KEY,
-        query: `Current internships: ${message}`,
-        search_depth: "advanced",
-        max_results: 5
-      })
-    });
+    // Use Gemini with Google Search Grounding for free, real-time discovery
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
     
-    if (!tavilyRes.ok) {
-      throw new Error(`Tavily API failed with status ${tavilyRes.status}`);
-    }
-
-    const searchData: any = await tavilyRes.json();
-    const searchResults = searchData.results?.map((r: any) => `${r.title}: ${r.content}`).join('\n') || "No results found.";
-
-    // 2. Use Gemini to structure the real-time data
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    // Using the official @google/genai pattern with googleSearch tool
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview",
-      contents: `You are a specialized Internship Discovery Agent. 
-      The user is asking: "${message}"
-      
-      I have found the following real-time data from the web:
-      ${searchResults}
-      
-      Your task:
-      1. Extract the most relevant AI internships from this search data.
-      2. Strictly return them as a JSON array of objects.
-      3. Each object MUST have: company, role, description, location.
-      4. If the search results are poor, use your internal knowledge to supplement with legitimate opportunities.
-      
-      Return ONLY the JSON. No other text.`,
+      model: "gemini-2.0-flash", 
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are a specialized Internship Discovery Agent. 
+          The user is asking: "${message}"
+          
+          Your task:
+          1. Use Google Search to find the latest AI internships and career opportunities.
+          2. Supplement this with your internal knowledge and the following curated India-based listings if relevant:
+             - TechCorp India: Frontend Developer Intern (React/Tailwind)
+             - DataSense: Data Analyst Intern (Python/Tableau)
+             - CloudScale: Backend Engineering Intern (Node.js)
+          3. Strictly return the results as a JSON array of objects inside an "internships" field.
+          4. Each object MUST have: company, role, description, location.
+          
+          Return ONLY the JSON. No other text.`
+        }]
+      }],
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            internships: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  company: { type: Type.STRING },
-                  role: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  location: { type: Type.STRING }
-                },
-                required: ["company", "role", "description", "location"]
-              }
-            }
-          },
-          required: ["internships"]
-        }
+        tools: [{ googleSearch: {} }] as any,
+        responseMimeType: 'application/json'
       }
     });
 
-    const result = JSON.parse(response.text || '{}');
+    const resultText = response.text || '{}';
+    // Clean potential markdown code blocks
+    const cleanedText = resultText.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(cleanedText || '{"internships":[]}');
+    
     console.log("Structured Internships:", result);
-    res.json(result);
+    return res.json(result);
   } catch (error: any) {
-    console.error('Chat AI error details:', {
-      message: error.message,
-      stack: error.stack,
-      tavilyKeyProvided: !!process.env.TAVILY_API_KEY,
-      geminiKeyProvided: !!process.env.GEMINI_API_KEY
-    });
-    res.status(500).json({ error: 'Failed to discover internships: ' + (error.message || 'Unknown error') });
+    console.error('Chat AI error details:', error);
+    return res.status(500).json({ error: 'Failed to discover internships: ' + (error.message || 'Unknown error') });
   }
 });
 

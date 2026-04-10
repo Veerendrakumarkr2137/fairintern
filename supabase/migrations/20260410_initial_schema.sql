@@ -44,3 +44,6 @@ USING (auth.uid() = recruiter_id);
 -- Create index for faster searches
 CREATE INDEX IF NOT EXISTS idx_internships_role ON internships(role);
 CREATE INDEX IF NOT EXISTS idx_internships_company ON internships(company);
+
+-- GIN index for JSONB flags to allow efficient filtering by specific flag tags
+CREATE INDEX IF NOT EXISTS idx_internships_flags ON internships USING GIN (flags);

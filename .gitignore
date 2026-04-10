@@ -1,9 +1,8 @@
 node_modules
-PS D:\fairintern> npm run dev
-
-> fairintern@0.1.0 dev
-> next dev
-
-'next' is not recognized as an internal or external command,
-operable program or batch file.
 .env
+.env.local
+.DS_Store
+dist
+build
+.next
+supabase/.temp
