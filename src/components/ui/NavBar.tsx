@@ -1,10 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, User } from 'lucide-react';
+import { Shield, User, LogOut, Menu, Zap } from 'lucide-react';
 
 export function NavBar() {
   const navigate = useNavigate();
-  // Mock auth state
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || 'null');
 
@@ -14,62 +13,56 @@ export function NavBar() {
     navigate('/');
   };
 
-  // Unauthenticated Minimal Header
-  if (!token) {
-    return (
-      <nav className="sticky top-0 z-50 w-full bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="bg-slate-900 p-1.5 rounded-lg shadow-sm">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-slate-900 tracking-tight">FairIntern</span>
-            </Link>
-          </div>
-        </div>
-      </nav>
-    );
-  }
-
-  // Authenticated Header
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white border-b border-slate-200 shadow-sm">
+    <nav className="sticky top-0 z-[100] w-full bg-white/80 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="bg-slate-900 p-1.5 rounded-lg shadow-sm">
+        <div className="flex justify-between h-20 items-center">
+          <Link to="/" className="flex items-center gap-2 group transition-all">
+            <div className="bg-slate-900 p-2 rounded-xl group-hover:bg-indigo-600 transition-colors">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-slate-900 tracking-tight">FairIntern</span>
+            <span className="text-2xl font-black text-slate-900 tracking-tighter">FairIntern</span>
           </Link>
           
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors tracking-wide">Internships</Link>
+          <div className="hidden md:flex items-center gap-10">
+            <Link to="/" className="text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors uppercase tracking-widest">Directory</Link>
+            {user?.role === 'recruiter' && (
+              <Link to="/recruiter" className="text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors uppercase tracking-widest">Recruiter Hub</Link>
+            )}
             
-            <div className="flex items-center gap-4 border-l border-slate-200 pl-4">
-              {user?.name && (
-                <span className="text-sm font-medium text-slate-700 bg-slate-100 py-1 px-3 rounded-full border border-slate-200 hidden md:block">
-                  {user.role === 'recruiter' ? 'Recruiter: ' : ''}<strong className="text-slate-900">{user.name}</strong>
-                </span>
-              )}
-              {user?.role !== 'recruiter' && (
-                <Link 
-                  to="/profile" 
-                  className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2"
+            <div className="flex items-center gap-6 border-l border-slate-200 pl-8">
+              {!token ? (
+                <button 
+                  onClick={() => navigate('/auth')}
+                  className="bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-lg hover:-translate-y-0.5"
                 >
-                  <User className="w-4 h-4 bg-slate-100 p-0.5 rounded-full" /> Profile
-                </Link>
+                  Join Platform
+                </button>
+              ) : (
+                <div className="flex items-center gap-6">
+                   <Link to="/profile" className="flex items-center gap-2 group">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all border border-slate-200">
+                         <User className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-600 group-hover:text-slate-900 transition-colors">
+                         {user.name}
+                      </span>
+                   </Link>
+                   <button 
+                     onClick={handleLogout}
+                     className="text-slate-400 hover:text-rose-500 transition-colors"
+                     title="Logout"
+                   >
+                     <LogOut className="w-5 h-5" />
+                   </button>
+                </div>
               )}
-
-              <button 
-                onClick={handleLogout}
-                className="text-sm font-semibold text-red-600 hover:text-red-800 transition-colors ml-2"
-              >
-                Logout
-              </button>
             </div>
           </div>
+
+          <button className="md:hidden text-slate-900">
+             <Menu className="w-6 h-6" />
+          </button>
         </div>
       </div>
     </nav>

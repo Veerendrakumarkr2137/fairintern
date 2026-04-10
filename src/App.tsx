@@ -19,7 +19,7 @@ import { InternshipBot } from './components/ui/InternshipBot';
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-slate-50">
+      <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-white selection:bg-indigo-600 selection:text-white relative">
         <NavBar />
         <main className="flex-1 flex flex-col">
           <Routes>
@@ -34,7 +34,6 @@ export default function App() {
         <Footer />
         <InternshipBot />
       </div>
-
     </Router>
   );
 }
